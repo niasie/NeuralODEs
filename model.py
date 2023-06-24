@@ -16,15 +16,22 @@ def get_activation(activation: str):
 
 
 class ConvolutionalDownSampler(torch.nn.Module):
-    def __init__(self, n_channels, activation):
+    def __init__(self, n_channels, activation, with_norm):
         super().__init__()
         self.activation = get_activation(activation)()
+        
         self.layers = torch.nn.Sequential(
             torch.nn.Conv2d(1, n_channels, 3, 1),
             torch.nn.GroupNorm(n_channels, n_channels),
             self.activation,
             torch.nn.Conv2d(n_channels, n_channels, 4, 2, 1),
             torch.nn.GroupNorm(n_channels, n_channels),
+            self.activation,
+            torch.nn.Conv2d(n_channels, n_channels, 4, 2, 1),
+        ) if with_norm else torch.nn.Sequential(
+            torch.nn.Conv2d(1, n_channels, 3, 1),
+            self.activation,
+            torch.nn.Conv2d(n_channels, n_channels, 4, 2, 1),
             self.activation,
             torch.nn.Conv2d(n_channels, n_channels, 4, 2, 1),
         )
@@ -34,10 +41,10 @@ class ConvolutionalDownSampler(torch.nn.Module):
 
 
 class ConvolutionalClassificationHead(torch.nn.Module):
-    def __init__(self, n_channels, output_size, activation) -> None:
+    def __init__(self, n_channels, output_size, activation, with_norm) -> None:
         super().__init__()
+        self.norm = torch.nn.GroupNorm(n_channels, n_channels) if with_norm else None
         self.layers = torch.nn.Sequential(
-            torch.nn.GroupNorm(n_channels, n_channels),
             get_activation(activation)(),
             torch.nn.AdaptiveAvgPool2d((1, 1)),
             torch.nn.Flatten(),
@@ -45,6 +52,8 @@ class ConvolutionalClassificationHead(torch.nn.Module):
         )
 
     def forward(self, x):
+        if self.norm is not None:
+            x = self.norm(x)
         return self.layers(x)
 
 
@@ -156,7 +165,7 @@ class ResNetConv(torch.nn.Module):
         super().__init__()
 
         self.activation = get_activation(activation)()
-        self.downsampler = ConvolutionalDownSampler(n_channels, activation)
+        self.downsampler = ConvolutionalDownSampler(n_channels, activation, with_norm)
         self.residual_blocks = torch.nn.Sequential(
             *[
                 ResidualBlockConv(
@@ -171,6 +180,7 @@ class ResNetConv(torch.nn.Module):
             n_channels,
             output_size,
             activation,
+            with_norm,
         )
 
     def forward(self, x):
