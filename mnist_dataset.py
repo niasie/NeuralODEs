@@ -15,7 +15,7 @@ def load_images(device, split="train"):
     buf = f.read()
     data = np.frombuffer(buf, dtype=np.uint8)
     data = data.reshape(-1, IMAGE_SIZE, IMAGE_SIZE)
-    return torch.from_numpy(normalize(data)).to(dtype=torch.float32, device=device)
+    return torch.from_numpy(normalize(data)).to(dtype=torch.float32, device=device).unsqueeze(1)
 
 
 def load_labels(device, split="train"):
