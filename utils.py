@@ -2,6 +2,7 @@ from typing import Any
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from prettytable import PrettyTable
+import os
 
 
 def train(
@@ -17,6 +18,8 @@ def train(
     mode="max",
     checkpoint_path="log/",
 ):
+    checkpoint_path = os.path.join(checkpoint_path, "best_model.pth")
+
     val_best = -torch.inf if mode == "max" else torch.inf
     n_batch = len(train_set)
 
@@ -48,11 +51,11 @@ def train(
                 if mode == "max":
                     if val_score > val_best:
                         val_best = val_score
-                        torch.save(checkpoint, f"{checkpoint_path}.pth")
+                        torch.save(checkpoint, checkpoint_path)
                 elif mode == "min":
                     if val_score < val_best:
                         val_best = val_score
-                        torch.save(checkpoint, f"{checkpoint_path}.pth")
+                        torch.save(checkpoint, checkpoint_path)
 
 
 # https://discuss.pytorch.org/t/how-do-i-check-the-number-of-parameters-of-a-model/4325/23?page=2
