@@ -1,4 +1,4 @@
-from model import ResNet
+from model import ResNetConv
 from mnist_dataset import getMNISTTDataset, load_images, load_labels
 from utils import train, compute_accuracy, count_parameters, CELossModel
 import torch
@@ -15,11 +15,11 @@ model_name = model_name.replace(".", "_")
 
 writer = SummaryWriter(f"logs\\{model_name}")
 
-model = ResNet(6, 28 ** 2, 10, "relu", False).to(device)
+model = ResNetConv(6, 64, 10, "relu", False).to(device)
 optimizer = torch.optim.Adam(params=model.parameters())
-# count_parameters(model)
+count_parameters(model)
 
-train_set = getMNISTTDataset(device, "train", 0, 5000, True)
+train_set = getMNISTTDataset(device, "train", 0, 128, True)
 test_input = load_images(device, "test")
 test_labels = load_labels(device, "test")
 test_set = (test_input, test_labels)
