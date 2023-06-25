@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from tableau import ExplicitEuler
+from tableau import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, ClassicalRK4, Kuttas38Method
 from RKIntegrator import rk_solve
 import matplotlib.pyplot as plt
 
@@ -21,9 +21,9 @@ y0[1] = 1.0
 t0 = torch.tensor(0.0, device=device)
 t1 = torch.tensor(1.0, device=device)
 dt = torch.tensor(0.01, device=device)
-tableau = ExplicitEuler()
+tableau = Kuttas38Method()
 
-y_final, times, states = rk_solve(y0, t0, t1, f_exponential, dt, tableau)
+y_final, times, states = rk_solve(y0, t0, t1, f_exponential, dt, tableau, return_all_states=True)
 
 
 t = np.linspace(0, 1, 100)
