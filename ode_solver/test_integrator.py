@@ -1,11 +1,11 @@
 import torch
 import numpy as np
-from tableau import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, ClassicalRK4, Kuttas38Method
-from RKIntegrator import rk_solve
+from tableau import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, ClassicalRK4, Kuttas38Method, Fehlberg4, Fehlberg5
+from RKIntegrator import rk_solve, rk_adaptive_embedded
 import matplotlib.pyplot as plt
 
 
-coeff = -1.0
+coeff = -10.0
 def f_exponential(t, y):
     return coeff * y
 
@@ -20,11 +20,15 @@ y0[0] = 5.0
 y0[1] = 1.0
 t0 = torch.tensor(0.0, device=device)
 t1 = torch.tensor(1.0, device=device)
-dt = torch.tensor(0.01, device=device)
-tableau = Kuttas38Method()
+dt = torch.tensor(0.1, device=device)
+tableau = Fehlberg4()
 
-y_final, times, states = rk_solve(y0, t0, t1, f_exponential, dt, tableau, return_all_states=True)
+print(tableau.a.shape)
+print(tableau.b.shape)
+print(tableau.c.shape)
 
+# y_final, times, states = rk_solve(y0, t0, t1, f_exponential, dt, tableau, return_all_states=True)
+y_final, times, states = rk_adaptive_embedded(y0, t0, t1, dt, f_exponential, Fehlberg4(), Fehlberg5(), True, 1e-6, 1e-6)
 
 t = np.linspace(0, 1, 100)
 y_exact_1 = f_exact(t, 5.0)
