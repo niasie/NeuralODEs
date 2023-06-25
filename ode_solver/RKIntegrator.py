@@ -35,17 +35,19 @@ def explicit_rk_step(
     return y0 + dt * torch.sum(b * k, dim=-1)
 
 
-def rk_solve(y0, t0, t1, f, dt, tableau):
+def rk_solve(y0, t0, t1, f, dt, tableau, return_all_states=False,):
     t = t0
     y = torch.clone(y0)
     states = []
     times = []
     while t < t1:
-        times.append(t.detach().cpu().numpy())
-        states.append(y.detach().cpu().numpy())
+        if return_all_states:
+            times.append(t.detach().cpu().numpy())
+            states.append(y.detach().cpu().numpy())
         y = explicit_rk_step(y, t, f, dt, tableau)
         t = t + dt
 
-    times.append(t.detach().cpu().numpy())
-    states.append(y.detach().cpu().numpy())
+    if return_all_states:
+        times.append(t.detach().cpu().numpy())
+        states.append(y.detach().cpu().numpy())
     return y, times, states
