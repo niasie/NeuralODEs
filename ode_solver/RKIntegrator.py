@@ -1,5 +1,5 @@
 import torch
-from tableau import ButcherTableau
+from .tableau import ButcherTableau
 
 
 def explicit_rk_step(

@@ -1,4 +1,6 @@
 import torch
+from ode_solver.RKIntegrator import rk_solve, rk_adaptive_embedded
+
 
 def get_activation(activation: str):
     activation = activation.lower()
@@ -189,3 +191,100 @@ class ResNetConv(torch.nn.Module):
         x = self.classification_head(x)
         return x
 
+
+class ODELayer(torch.nn.Module):
+    def __init__(
+            self,
+            n_channels,
+            activation,
+            with_norm,
+            tableau_low,
+            tableau_high=None,
+            t0=0.0,
+            t1=1.0,
+            dt=0.1,
+            atol=1e-6,
+            rtol=1e-6,
+        ):
+        super().__init__()
+        self.w1 = torch.nn.Conv2d(n_channels + 1, n_channels, 3, 1, 1)
+        self.w2 = torch.nn.Conv2d(n_channels + 1, n_channels, 3, 1, 1)
+
+        self.solver = rk_solve if tableau_high is None else rk_adaptive_embedded
+        self.tableau_low = tableau_low
+        self.tableau_high = tableau_high
+
+        self.activation = activation
+        self.with_norm = with_norm
+        self.norm1 = None
+        self.norm2 = None
+        if with_norm:
+            self.norm1 = torch.nn.GroupNorm(n_channels, n_channels)
+            self.norm2 = torch.nn.GroupNorm(n_channels, n_channels)
+        
+        self.t0 = torch.tensor(t0, dtype=torch.float32)
+        self.t1 = torch.tensor(t1, dtype=torch.float32)
+        self.dt = torch.tensor(dt, dtype=torch.float32)
+        self.atol = atol
+        self.rtol = rtol
+
+    def _conv_with_time(self, t, x, conv):
+        ts = torch.full_like(x[:, :1], t.item())
+        return conv(torch.cat((ts, x), dim=1))
+
+    def _ode_rhs(self, t, x):
+        if self.with_norm:
+            x = self.norm1(x)
+        x = self.activation(x)
+        x = self._conv_with_time(t, x, self.w1)
+        if self.with_norm:
+            x = self.norm2(x)
+        x = self.activation(x)
+        x = self._conv_with_time(t, x, self.w2)
+        return x
+
+    def forward(self, x):
+        x_final = None
+        if self.tableau_high is not None:
+            x_final, _, _ = self.solver(x, self.t0, self.t1, self.dt, self._ode_rhs, self.tableau_low, self.tableau_high, False, self.atol, self.rtol)
+        else:
+            x_final, _, _ = self.solver(x, self.t0, self.t1, self.dt, self._ode_rhs, self.tableau_low, False)
+        return x_final
+
+
+class ODEClassifier(torch.nn.Module):
+    def __init__(
+            self,
+            n_channels,
+            output_size,
+            activation,
+            with_norm,
+            tableau_low,
+            tableau_high=None,
+            t0=0.0,
+            t1=1.0,
+            dt=0.1,
+            atol=1e-6,
+            rtol=1e-6,
+        ):
+        super().__init__()
+        self.ode_layer = ODELayer(
+            n_channels,
+            get_activation(activation)(),
+            with_norm,
+            tableau_low,
+            tableau_high,
+            t0,
+            t1,
+            dt,
+            atol,
+            rtol,
+        )
+        self.downsampler = ConvolutionalDownSampler(n_channels, activation, with_norm)
+        self.classification_head = ConvolutionalClassificationHead(n_channels, output_size, activation, with_norm)
+
+    def forward(self, x):
+        x = self.downsampler(x)
+        x = self.ode_layer(x)
+        x = self.classification_head(x)
+        return x
