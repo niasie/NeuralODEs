@@ -1,10 +1,10 @@
-from model import ODEClassifier
+from neuralodes import ConvolutionalODEClassifier
 from mnist_dataset import getMNISTTDataset, load_images, load_labels
-from utils import train, compute_accuracy, count_parameters, CELossModel
+from neuralodes import train, compute_accuracy, count_parameters, CELossModel
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from datetime import date, datetime
-from ode_solver.tableau import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, Fehlberg4, Fehlberg5
+from neuralodes import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, Fehlberg4, Fehlberg5
 
 
 torch.manual_seed(42)
@@ -18,18 +18,21 @@ writer = SummaryWriter(f"logs\\{model_name}")
 
 tableau_low = ExplicitEuler()
 tableau_high = None
-model = ODEClassifier(
+model = ConvolutionalODEClassifier(
+    in_channels=1,
     n_channels=64,
     output_size=10,
+    kernel_size=3,
     activation="relu",
+    n_downsampling_blocks=2,
     with_norm=False,
     tableau_low=tableau_low,
     tableau_high=tableau_high,
     t0=0.0,
     t1=1.0,
-    dt=1.0 / 6.0,
+    dt=1.0/6.0,
     atol=1e-6,
-    rtol=1e-6
+    rtol=1e-6,
 ).to(device)
 
 optimizer = torch.optim.Adam(params=model.parameters())

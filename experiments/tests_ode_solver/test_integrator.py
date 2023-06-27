@@ -1,7 +1,7 @@
 import torch
 import numpy as np
-from tableau import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, ClassicalRK4, Kuttas38Method, Fehlberg4, Fehlberg5
-from RKIntegrator import rk_solve, rk_adaptive_embedded
+from neuralodes import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, ClassicalRK4, Kuttas38Method, Fehlberg4, Fehlberg5
+from neuralodes import rk_adaptive_embedded, rk_solve
 import matplotlib.pyplot as plt
 
 

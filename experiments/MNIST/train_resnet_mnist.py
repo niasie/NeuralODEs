@@ -1,6 +1,6 @@
-from model import ResNetConv
+from neuralodes import ResNetConv
 from mnist_dataset import getMNISTTDataset, load_images, load_labels
-from utils import train, compute_accuracy, count_parameters, CELossModel
+from neuralodes.utils import train, compute_accuracy, count_parameters, CELossModel
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from datetime import date, datetime
@@ -15,7 +15,17 @@ model_name = model_name.replace(".", "_")
 
 writer = SummaryWriter(f"logs\\{model_name}")
 
-model = ResNetConv(6, 64, 10, "relu", False).to(device)
+model = ResNetConv(
+    num_blocks=6,
+    in_channels=1,
+    n_channels=64,
+    output_size=10,
+    activation="relu",
+    with_norm=False,
+    kernel_size=3,
+    n_downsampling_blocks=2,
+).to(device)
+
 optimizer = torch.optim.Adam(params=model.parameters())
 count_parameters(model)
 

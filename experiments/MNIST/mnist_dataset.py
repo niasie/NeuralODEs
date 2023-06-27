@@ -8,8 +8,9 @@ from torch.utils.data import TensorDataset, DataLoader
 IMAGE_SIZE = 28
 
 
+# NNIST reading code from https://stackoverflow.com/a/53570674.
 def load_images(device, split="train"):
-    data_path = os.path.join("data", "mnist", f'{split}_images.gz')
+    data_path = os.path.join("data", f'{split}_images.gz')
     f = gzip.open(data_path,"r")
     f.read(16)
     buf = f.read()
@@ -19,7 +20,7 @@ def load_images(device, split="train"):
 
 
 def load_labels(device, split="train"):
-    label_path = os.path.join("data", "mnist", f'{split}_labels.gz')
+    label_path = os.path.join("data", f'{split}_labels.gz')
     f = gzip.open(label_path,"r")    
     f.read(8)
     buf = f.read()

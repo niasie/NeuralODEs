@@ -74,6 +74,20 @@ def count_parameters(model):
     return total_params
 
 
+def get_activation(activation: str):
+    activation = activation.lower()
+
+    if activation == "relu":
+        return torch.nn.ReLU
+    elif activation == "sigmoid":
+        return torch.nn.Sigmoid
+    elif activation == "tanh":
+        return torch.nn.Tanh
+    elif activation == "lrelu":
+        return torch.nn.LeakyReLU
+    else:
+        raise ValueError(f"{activation} not supported\n")
+
 
 class CELossModel():
     def __init__(self, batched=True):
