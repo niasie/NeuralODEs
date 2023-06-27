@@ -1,5 +1,5 @@
-from neuralodes import ResNetConv
 from mnist_dataset import getMNISTTDataset, load_images, load_labels
+from neuralodes.models import ResNetConv
 from neuralodes.utils import train, compute_accuracy, count_parameters, CELossModel
 import torch
 from torch.utils.tensorboard import SummaryWriter

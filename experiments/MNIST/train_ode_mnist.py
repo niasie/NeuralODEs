@@ -1,11 +1,23 @@
-from neuralodes import ConvolutionalODEClassifier
 from mnist_dataset import getMNISTTDataset, load_images, load_labels
-from neuralodes import train, compute_accuracy, count_parameters, CELossModel
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from datetime import date, datetime
-from neuralodes import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, Fehlberg4, Fehlberg5
-
+from neuralodes.models import ConvolutionalODEClassifier
+from neuralodes.ode_solver import (
+    ExplicitEuler,
+    ExplicitMidpoint,
+    ExplicitTrapezoidal,
+    ClassicalRK4,
+    Kuttas38Method,
+    Fehlberg4,
+    Fehlberg5,
+)
+from neuralodes.utils import (
+    train,
+    count_parameters,
+    CELossModel,
+    compute_accuracy,
+)
 
 torch.manual_seed(42)
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")

@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from neuralodes import rk_solve, rk_adaptive_embedded
+from ..ode_solver import rk_solve, rk_adaptive_embedded
 from ..utils import get_activation
 
 
