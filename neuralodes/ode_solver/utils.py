@@ -9,7 +9,7 @@ from .tableau import (
     Fehlberg5,
 )
 import torch
-
+from scipy.integrate import solve_ivp
 
 def get_tableau(name):
     name = name.lower()
@@ -88,3 +88,14 @@ def get_ode_integrator(
                 )
             print("Using an adaptive, non-embedded method.")
             return integrator
+
+def get_scipy_integrator(method="RK45", return_all_states=True):
+    def integrator(f, z0, t0, t1, dt):
+        sol = solve_ivp(f, [t0, t1], z0.squeeze(0), args=(True,), first_step=dt, method=method)
+        if return_all_states:
+            return torch.tensor(sol.y[-1]), list(sol.t), list(sol.y)
+        else:
+            return torch.tensor(sol.y[-1]), [], []
+    
+    print(f"Using the Scipy implementation of the {method} method.")
+    return integrator
