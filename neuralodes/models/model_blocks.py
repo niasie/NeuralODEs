@@ -187,11 +187,11 @@ class ConvolutionalODELayer(nn.Module):
         x_final = None
         if self.tableau_high is not None:
             x_final, _, _ = self.solver(
+                self._ode_rhs,
                 x,
                 self.t0,
                 self.t1,
                 self.dt,
-                self._ode_rhs,
                 self.tableau_low,
                 self.tableau_high,
                 False,
@@ -200,11 +200,11 @@ class ConvolutionalODELayer(nn.Module):
             )
         else:
             x_final, _, _ = self.solver(
+                self._ode_rhs,
                 x,
                 self.t0,
                 self.t1,
                 self.dt,
-                self._ode_rhs,
                 self.tableau_low,
                 False,
             )
