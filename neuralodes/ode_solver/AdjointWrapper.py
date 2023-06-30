@@ -44,7 +44,7 @@ class AdjointWrapper(torch.autograd.Function):
                 # s[2:] = *
 
                 with torch.enable_grad():
-                    t, s = torch.tensor(t).detach().requires_grad_(), torch.tensor(s).detach().requires_grad_()
+                    t, s = torch.tensor(t), torch.tensor(s)
                     zt = s[0].clone().detach().requires_grad_()
 
                     aug = [None] * s.shape[0]
@@ -58,7 +58,7 @@ class AdjointWrapper(torch.autograd.Function):
                         if elem is None:
                             aug[i] = torch.zeros_like(s[i])
 
-                # return f(z(t), t), df_dz(t), df_dparam(t)
+                # return f(z(t), t), -a^T df_dz(t), -a^T df_dparam(t)
                 return aug[0], aug[1], *aug[2:]
 
             s1 = solver(augmented_dynamics, s0, t1, t0, *solver_args, **solver_kwargs)
