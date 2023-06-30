@@ -41,8 +41,8 @@ l = torch.nn.functional.mse_loss
 f_optim.train()
 for i in range(epochs):
     optimizer.zero_grad()
-    # y_final, times, states = rk_solve(y0, t0, t1, dt, f_optim, method, False)
-    y_final, times, states = rk_adaptive_embedded(y0, t0, t1, dt, f_optim, f4, f5, False)
+    # y_final, times, states = rk_solve(f_optim, y0, t0, t1, dt, method, False)
+    y_final, times, states = rk_adaptive_embedded(f_optim, y0, t0, t1, dt, f4, f5, False)
     print(f"i = {i}, y_final = {y_final.item()}")
     loss = l(y_final, y_target)
     loss.backward()
@@ -57,8 +57,8 @@ t = np.linspace(0.0, 1.0, 100)
 y_exact_1 = f_exact(t)
 plt.plot(t, y_exact_1, label="y0=5.0")
 
-# y_final, times, states = rk_solve(y0, t0, t1, dt, f_optim, method, True)
-y_final, times, states = rk_adaptive_embedded(y0, t0, t1, dt, f_optim, f4, f5, True)
+# y_final, times, states = rk_solve(f_optim, y0, t0, t1, dt, method, True)
+y_final, times, states = rk_adaptive_embedded(f_optim, y0, t0, t1, dt, f4, f5, True)
     
 times = np.array(times)
 states = np.concatenate([np.expand_dims(state, 0) for state in states])

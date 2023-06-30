@@ -23,8 +23,8 @@ t1 = torch.tensor(10.0, device=device)
 dt = torch.tensor(0.1, device=device)
 tableau = Fehlberg4()
 
-# y_final, times, states = rk_solve(y0, t0, t1, dt, f_exponential, tableau, return_all_states=True)
-y_final, times, states = rk_adaptive_embedded(y0, t0, t1, dt, f_exponential, Fehlberg4(), Fehlberg5(), True, 1e-6, 1e-6)
+# y_final, times, states = rk_solve(f_exponential, y0, t0, t1, dt, tableau, return_all_states=True)
+y_final, times, states = rk_adaptive_embedded(f_exponential, y0, t0, t1, dt, Fehlberg4(), Fehlberg5(), True, 1e-6, 1e-6)
 
 t = np.linspace(0.0, 10.0, 100)
 y_exact_1 = f_exact(t, 5.0)

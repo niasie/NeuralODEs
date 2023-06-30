@@ -36,7 +36,7 @@ def explicit_rk_step(
     return y0 + dt * torch.sum(b * k, dim=-1), k if return_increments else None
 
 
-def rk_solve(y0_, t0_, t1_, dt_, f, tableau, return_all_states=False):
+def rk_solve(f, y0_, t0_, t1_, dt_, tableau, return_all_states=False):
     t = torch.clone(t0_)
     dt = torch.clone(dt_)
     y = torch.clone(y0_)
@@ -57,7 +57,7 @@ def rk_solve(y0_, t0_, t1_, dt_, f, tableau, return_all_states=False):
     return y, times, states
 
 
-def rk_adaptive_embedded(y0_, t0_, t1_, dt_, f, tableau_low, tableau_high, return_all_states=False, atol=1e-6, rtol=1e-6):
+def rk_adaptive_embedded(f, y0_, t0_, t1_, dt_, tableau_low, tableau_high, return_all_states=False, atol=1e-6, rtol=1e-6):
     t = torch.clone(t0_)
     dt = torch.clone(dt_)
     y = torch.clone(y0_)

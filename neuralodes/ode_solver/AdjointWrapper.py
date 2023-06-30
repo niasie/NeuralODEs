@@ -7,13 +7,14 @@ class AdjointWrapper(torch.autograd.Function):
     """
 
     @staticmethod
-    def forward(ctx, solver, f, z0, t0, t1, solver_kwargs, *f_params):
+    def forward(ctx, solver, f, z0, t0, t1, solver_args, solver_kwargs, *f_params):
         ctx.solver = solver
         ctx.f = f
+        ctx.solver_args = solver_args
         ctx.solver_kwargs = solver_kwargs
 
         with torch.no_grad():
-            z1 = solver(f, z0, t0, t1, solver_kwargs)[0, -1]
+            z1 = solver(f, z0, t0, t1, *solver_args, **solver_kwargs)[0, -1]
 
             ctx.save_for_backward(z0, t0, t1, z1, *f_params)
         
@@ -26,6 +27,7 @@ class AdjointWrapper(torch.autograd.Function):
 
             solver = ctx.solver
             f = ctx.f
+            solver_args = ctx.solver_args
             solver_kwargs = ctx.solver_kwargs
 
             s0 = []
@@ -58,16 +60,16 @@ class AdjointWrapper(torch.autograd.Function):
                 # return f(z(t), t), df_dz(t), df_dparam(t)
                 return aug[0], aug[1], *aug[2:]
 
-            s1 = solver(augmented_dynamics, s0, t1, t0, solver_kwargs)
+            s1 = solver(augmented_dynamics, s0, t1, t0, *solver_args, **solver_kwargs)
         
             z0_backwards = s1[0, -1]
             dL_dz0 = s1[1, -1].unsqueeze(0)
             dL_dparam = s1[2:, -1].unsqueeze(0)
 
-        return (None, None, dL_dz0, None, None, None, *dL_dparam)
+        return (None, None, dL_dz0, None, None, None, None, *dL_dparam)
 
 
-def adjoint_wrapper(solver, f, f_params, y0, t0, t1, solver_kwargs={}):
+def adjoint_wrapper(solver, f, f_params, y0, t0, t1, *solver_args, **solver_kwargs):
     result = AdjointWrapper.apply(
-        solver, f, y0, t0, t1, solver_kwargs, *f_params)
+        solver, f, y0, t0, t1, solver_args, solver_kwargs, *f_params)
     return result
