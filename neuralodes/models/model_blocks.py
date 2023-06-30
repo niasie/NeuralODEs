@@ -185,3 +185,108 @@ class ConvolutionalODELayer(nn.Module):
             self.dt,
         )
         return x_final
+
+
+class ParemeterPredicitingNetwork(nn.Module):
+    def __init__(
+            self,
+            z_size,
+            n_neurons,
+            n_functions,
+        ) -> None:
+        super().__init__()
+        self.z_size = z_size
+        self.n_neurons = n_neurons
+        self.n_functions = n_functions
+
+        self.w_in_network = nn.Sequential(
+            nn.Linear(1, n_neurons),
+            nn.Tanh(),
+            nn.Linear(n_neurons, n_neurons),
+            nn.Tanh(),
+            nn.Linear(n_neurons, n_functions * z_size),
+        )
+
+        self.w_out_network = nn.Sequential(
+            nn.Linear(1, n_neurons),
+            nn.Tanh(),
+            nn.Linear(n_neurons, n_neurons),
+            nn.Tanh(),
+            nn.Linear(n_neurons, n_functions * z_size),
+        )
+        
+        self.b_network = nn.Sequential(
+            nn.Linear(1, n_neurons),
+            nn.Tanh(),
+            nn.Linear(n_neurons, n_neurons),
+            nn.Tanh(),
+            nn.Linear(n_neurons, n_functions),
+        )
+
+        self.gate_network = nn.Sequential(
+            nn.Linear(1, n_neurons),
+            nn.Tanh(),
+            nn.Linear(n_neurons, n_neurons),
+            nn.Tanh(),
+            nn.Linear(n_neurons, n_functions),
+            nn.Sigmoid()
+        )
+
+    def forward(self, t):
+        t = t.reshape(1, 1)
+        w_in = self.w_in_network(t)
+        w_out = self.w_out_network(t)
+        b = self.b_network(t)
+        gate = self.gate_network(t)
+
+        w_in = w_in.reshape(1, self.n_functions, self.z_size, 1)
+        w_out = w_out.reshape(1, self.n_functions, 1, self.z_size)
+        b = b.reshape(1, self.n_functions, 1, 1)
+        gate = gate.reshape(1, self.n_functions, 1, 1)
+
+        return w_in, w_out, b, gate
+
+
+class ContinousNormalizingFlowRHS(nn.Module):
+    def __init__(self, z_size, n_neurons_param_net, n_functions) -> None:
+        super().__init__()
+
+        self.z_size = z_size
+        self.n_neurons_parameter_network = n_neurons_param_net
+        self.n_functions = n_functions
+
+        self.parameter_predicting_network = ParemeterPredicitingNetwork(
+            z_size=z_size,
+            n_neurons=n_neurons_param_net,
+            n_functions=n_functions,
+        )
+        self.tanh = nn.Tanh()
+
+    def forward(self, t, z_and_logpz):
+        t = t.squeeze()
+        # w_in: [1, n_funcs, z_size, 1]
+        # w_out: [1, n_funcs, 1, z_size]
+        # b: [1, n_funcs, z_size, 1]
+        # gate: [1, n_funcs, 1, 1]
+        z = z_and_logpz[..., 0:self.z_size]
+        # logpz = z_and_logpz[..., -1]
+
+        z.requires_grad_(True)
+        w_in, w_out, b, gate = self.parameter_predicting_network(t)
+
+        z_ = z.unsqueeze(1).unsqueeze(1)
+        hidden_state = self.tanh(torch.matmul(z_, w_in) + b)
+        gated_hidden_state = hidden_state * gate
+        dz_dt = torch.matmul(gated_hidden_state, w_out).mean(dim=1).squeeze()
+
+        # dzdt = f, need trace of dzdf
+        trace = 0.0
+        for i in range(self.z_size):
+            # get i-th row of jacobian
+            dfi_dz = torch.autograd.grad(dz_dt[:, i].sum(), z, create_graph=True)[0]
+            trace += dfi_dz[:, i]
+        trace = trace.unsqueeze(1)
+
+        dlogpz_dt = -trace
+        return torch.concat((dz_dt, dlogpz_dt), dim=-1)
+

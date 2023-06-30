@@ -7,6 +7,7 @@ from . import (
     ConvolutionalDownSampler,
     ConvolutionalODELayer,
     LinearResidualBlock,
+    ContinousNormalizingFlowRHS,
 )
 
 class ResNetLinear(nn.Module):
@@ -99,19 +100,19 @@ class ResNetConv(nn.Module):
 
 class ConvolutionalODEClassifier(nn.Module):
     def __init__(
-            self,
-            ode_solver,
-            in_channels=1,
-            n_channels=64,
-            output_size=10,
-            kernel_size=3,
-            n_downsampling_blocks=2,
-            activation="relu",
-            with_norm="False",
-            t0=0.0,
-            t1=1.0,
-            dt=0.1,
-        ):
+        self,
+        ode_solver,
+        in_channels=1,
+        n_channels=64,
+        output_size=10,
+        kernel_size=3,
+        n_downsampling_blocks=2,
+        activation="relu",
+        with_norm="False",
+        t0=0.0,
+        t1=1.0,
+        dt=0.1,
+    ):
         super().__init__()
         self.ode_layer = ConvolutionalODELayer(
             ode_solver=ode_solver,
@@ -143,3 +144,48 @@ class ConvolutionalODEClassifier(nn.Module):
         x = self.ode_layer(x)
         x = self.classification_head(x)
         return x
+
+
+class ContinousNormalizingFlow(nn.Module):
+    def __init__(
+        self,
+        z_size,
+        n_neurons_param_net,
+        n_functions,
+        ode_solver,
+        t0=0.0,
+        t1=1.0,
+        dt=0.1,
+    ):    
+        super().__init__()
+
+        self.z_size = z_size
+        self.n_neurons_parameter_network = n_neurons_param_net
+        self.n_functions = n_functions
+
+        self.ode_rhs = ContinousNormalizingFlowRHS(
+            z_size=z_size,
+            n_neurons_param_net=n_neurons_param_net,
+            n_functions=n_functions,
+        )
+
+        self.ode_solver = ode_solver
+        self.t0 = torch.tensor(t0, dtype=torch.float32)
+        self.t1 = torch.tensor(t1, dtype=torch.float32)
+        self.dt = torch.tensor(dt, dtype=torch.float32)
+        self.latent_to_sample = False
+
+    def forward(self, z):
+        b = z.shape[0]
+        logpz = torch.zeros((b, 1), dtype=z.dtype, device=z.device)
+        x = torch.concat((z, logpz), dim=-1)
+        # forward ODE: latent -> sample
+        # backward ODE: sample -> latent
+        x_final, _, _ = self.ode_solver(
+            f=self.ode_rhs,
+            y0=x,
+            t0=self.t0 if self.latent_to_sample else self.t1,
+            t1=self.t1 if self.latent_to_sample else self.t0,
+            dt=self.dt,
+        )
+        return x_final[:, 0:self.z_size], x_final[:, -1]
