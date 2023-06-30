@@ -31,7 +31,7 @@ class AdjointWrapper(torch.autograd.Function):
             solver_kwargs = ctx.solver_kwargs
 
             s0 = []
-            s0.append(f(z1, t1))
+            s0.append(z1.clone().detach())
             s0.append(dL_dz1.clone().detach())
 
             for param in f_params:
@@ -44,17 +44,18 @@ class AdjointWrapper(torch.autograd.Function):
                 # s[2:] = *
 
                 with torch.enable_grad():
-                    t, s = torch.tensor(t), torch.tensor(s).detach().requires_grad_()
+                    t, s = torch.tensor(t).detach().requires_grad_(), torch.tensor(s).detach().requires_grad_()
+                    zt = s[0].clone().detach().requires_grad_()
 
                     aug = [None] * s.shape[0]
-                    f_eval = f(t, s[0])
+                    f_eval = f(t, zt)
                     
                     aug[0] = f_eval
                     aug[1], *aug[2:] = torch.autograd.grad(
-                        f_eval, (s[0], *f_params), -s[1], allow_unused=True, retain_graph=True)
+                        f_eval, (zt, *f_params), -s[1], allow_unused=True, retain_graph=True)
             
-                    for i, grad in enumerate(aug):
-                        if grad is None:
+                    for i, elem in enumerate(aug):
+                        if elem is None:
                             aug[i] = torch.zeros_like(s[i])
 
                 # return f(z(t), t), df_dz(t), df_dparam(t)
