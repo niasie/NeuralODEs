@@ -8,9 +8,8 @@ from . import (
     ConvolutionalODELayer,
     LinearResidualBlock,
 )
-from ..ode_solver import ExplicitEuler
 
-class ResNetLinear(torch.nn.Module):
+class ResNetLinear(nn.Module):
     def __init__(
             self,
             num_blocks=6,
@@ -51,7 +50,7 @@ class ResNetLinear(torch.nn.Module):
         return x
 
 
-class ResNetConv(torch.nn.Module):
+class ResNetConv(nn.Module):
     def __init__(
             self,
             num_blocks=6,
@@ -98,9 +97,10 @@ class ResNetConv(torch.nn.Module):
         return x
 
 
-class ConvolutionalODEClassifier(torch.nn.Module):
+class ConvolutionalODEClassifier(nn.Module):
     def __init__(
             self,
+            ode_solver,
             in_channels=1,
             n_channels=64,
             output_size=10,
@@ -108,27 +108,20 @@ class ConvolutionalODEClassifier(torch.nn.Module):
             n_downsampling_blocks=2,
             activation="relu",
             with_norm="False",
-            tableau_low=ExplicitEuler(),
-            tableau_high=None,
             t0=0.0,
             t1=1.0,
             dt=0.1,
-            atol=1e-6,
-            rtol=1e-6,
         ):
         super().__init__()
         self.ode_layer = ConvolutionalODELayer(
+            ode_solver=ode_solver,
             in_channels=n_channels,
             out_channels=n_channels,
             activation=activation,
             with_norm=with_norm,
-            tableau_low=tableau_low,
-            tableau_high=tableau_high,
             t0=t0,
             t1=t1,
             dt=dt,
-            atol=atol,
-            rtol=rtol,
         )
         self.downsampler = ConvolutionalDownSampler(
             in_channels=in_channels,
