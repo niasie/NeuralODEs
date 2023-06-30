@@ -42,9 +42,13 @@ def rk_solve(y0_, t0_, t1_, dt_, f, tableau, return_all_states=False):
     y = torch.clone(y0_)
     t1 = torch.clone(t1_)
     y = torch.clone(y0_)
+    integrate_forward = t1_ > t0_
+    if not integrate_forward and dt > 0:
+        dt = -dt
+
     states = []
     times = []
-    while t < t1:
+    while not reached_t1(t, t1, integrate_forward):
         if return_all_states:
             times.append(t.detach().cpu().numpy())
             states.append(y.detach().cpu().numpy())
@@ -57,6 +61,49 @@ def rk_solve(y0_, t0_, t1_, dt_, f, tableau, return_all_states=False):
     return y, times, states
 
 
+def rk_adaptive(y0_, t0_, t1_, dt_, f, tableau_low, tableau_high, return_all_states=False, atol=1e-6, rtol=1e-6):
+    t = torch.clone(t0_)
+    dt = torch.clone(dt_)
+    y = torch.clone(y0_)
+    t1 = torch.clone(t1_)
+    states = []
+    times = []
+    atol = torch.tensor(atol, dtype=y.dtype, device=y.device)
+
+    integrate_forward = t1_ > t0_
+    if not integrate_forward and dt > 0:
+        dt = -dt
+
+    if return_all_states:
+        times.append(t.detach().cpu().numpy())
+        states.append(y.detach().cpu().numpy())
+
+    while not reached_t1(t, t1, integrate_forward):
+        y_high, _ = explicit_rk_step(y, t, dt, f, tableau_high)
+        with torch.no_grad():
+            y_low, _ = explicit_rk_step(y, t, dt, f, tableau_low)
+            error_estimate = (y_low - y_high).flatten(1, -1).norm(dim=-1)
+            y_norm = y.flatten(1, -1).norm(dim=-1)
+            tolerance = torch.maximum(rtol * y_norm, atol)
+            if torch.any(error_estimate > tolerance):
+                # reject step
+                dt = dt / 2.0
+            else:
+                # accept step
+                t += dt
+                y = y_high
+                if return_all_states:       
+                    times.append(t.detach().cpu().numpy())
+                    states.append(y.detach().cpu().numpy())
+                dt = 1.1 * dt
+                if reached_t1(t + dt, t1, integrate_forward):
+                    if integrate_forward:
+                        dt = t1 - t + 1e-10
+                    else:
+                        dt = t1 - t - 1e-10
+    return y, times, states
+
+
 def rk_adaptive_embedded(y0_, t0_, t1_, dt_, f, tableau_low, tableau_high, return_all_states=False, atol=1e-6, rtol=1e-6):
     t = torch.clone(t0_)
     dt = torch.clone(dt_)
@@ -66,6 +113,10 @@ def rk_adaptive_embedded(y0_, t0_, t1_, dt_, f, tableau_low, tableau_high, retur
     times = []
     atol = torch.tensor(atol, dtype=y.dtype, device=y.device)
 
+    integrate_forward = t1_ > t0_
+    if not integrate_forward and dt > 0:
+        dt = -dt
+
     b_high = tableau_high.b
     for _ in range(y.dim()):
         b_high = b_high.unsqueeze(0)
@@ -74,25 +125,35 @@ def rk_adaptive_embedded(y0_, t0_, t1_, dt_, f, tableau_low, tableau_high, retur
     if return_all_states:
         times.append(t.detach().cpu().numpy())
         states.append(y.detach().cpu().numpy())
-    while t < t1:
+
+    while not reached_t1(t, t1, integrate_forward):
         y_low, increments = explicit_rk_step(y, t, dt, f, tableau_low, return_increments=True)
         y_high = y + dt * torch.sum(b_high * increments, dim=-1)
-        error_estimate = (y_low - y_high).flatten(1, -1).norm(dim=-1)
-        y_norm = y.flatten(1, -1).norm(dim=-1)
-        tolerance = torch.maximum(rtol * y_norm, atol)
-        if torch.any(error_estimate > tolerance):
-            # reject step
-            dt = dt / 2.0
-        else:
-            # accept step
-            t += dt
-            y = y_high
-            if return_all_states:       
-                times.append(t.detach().cpu().numpy())
-                states.append(y.detach().cpu().numpy())
-            dt = 1.1 * dt
-            if t + dt > t1:
-                dt = t1 - t + 1e-10
+        with torch.no_grad():
+            error_estimate = (y_low - y_high).flatten(1, -1).norm(dim=-1)
+            y_norm = y.flatten(1, -1).norm(dim=-1)
+            tolerance = torch.maximum(rtol * y_norm, atol)
+            if torch.any(error_estimate > tolerance):
+                # reject step
+                dt = dt / 2.0
+            else:
+                # accept step
+                t += dt
+                y = y_high
+                if return_all_states:       
+                    times.append(t.detach().cpu().numpy())
+                    states.append(y.detach().cpu().numpy())
+                dt = 1.1 * dt
+                if reached_t1(t + dt, t1, integrate_forward):
+                    if integrate_forward:
+                        dt = t1 - t + 1e-10
+                    else:
+                        dt = t1 - t - 1e-10
     return y, times, states
             
-        
+
+def reached_t1(t, t1, is_forward):
+    if is_forward:
+        return t >= t1
+    else:
+        return t <= t1

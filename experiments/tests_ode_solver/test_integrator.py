@@ -1,7 +1,6 @@
 import torch
 import numpy as np
-from neuralodes.ode_solver import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, ClassicalRK4, Kuttas38Method, Fehlberg4, Fehlberg5
-from neuralodes.ode_solver import rk_adaptive_embedded, rk_solve
+from neuralodes.ode_solver import get_ode_integrator
 import matplotlib.pyplot as plt
 
 
@@ -19,14 +18,21 @@ y0 = torch.empty((2, 1, 1, 1), dtype=torch.float32, device=device)
 y0[0] = 5.0
 y0[1] = 1.0
 t0 = torch.tensor(0.0, device=device)
-t1 = torch.tensor(10.0, device=device)
+t1 = torch.tensor(1.0, device=device)
 dt = torch.tensor(0.1, device=device)
-tableau = Fehlberg4()
+method_low = "fehlberg4"
+method_high = "fehlberg5"
 
-# y_final, times, states = rk_solve(y0, t0, t1, dt, f_exponential, tableau, return_all_states=True)
-y_final, times, states = rk_adaptive_embedded(y0, t0, t1, dt, f_exponential, Fehlberg4(), Fehlberg5(), True, 1e-6, 1e-6)
+integrator = get_ode_integrator(
+    method_low=method_low,
+    method_high=method_high,
+    atol=1e-6,
+    rtol=1e-6,
+    return_all_states=True,
+)
+y_final, times, states = integrator(f_exponential, y0, t0, t1, dt)
 
-t = np.linspace(0.0, 10.0, 100)
+t = np.linspace(0.0, 1.0, 100)
 y_exact_1 = f_exact(t, 5.0)
 y_exact_2 = f_exact(t, 1.0)
 

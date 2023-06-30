@@ -1,18 +1,11 @@
 import torch
-from neuralodes.ode_solver import rk_solve, rk_adaptive_embedded
-from neuralodes.ode_solver import ExplicitEuler, ExplicitMidpoint, ExplicitTrapezoidal, Fehlberg4, Fehlberg5
+from neuralodes.ode_solver import get_ode_integrator
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
 
 device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
-ee = ExplicitEuler()
-em = ExplicitMidpoint()
-et = ExplicitTrapezoidal()
-f4 = Fehlberg4()
-f5 = Fehlberg5()
-
 
 class FOptim(torch.nn.Module):
     def __init__(self):
@@ -36,13 +29,23 @@ dt = torch.tensor(0.1, device=device)
 optimizer = torch.optim.Adam(f_optim.parameters(), lr=1e-2)
 epochs = 250
 
-method = f5
+method_low = "fehlberg4"
+method_high = None
+
+integrator = get_ode_integrator(
+    method_low=method_low,
+    method_high=method_high,
+    atol=1e-6,
+    rtol=1e-6,
+    return_all_states=True,
+)
+
 l = torch.nn.functional.mse_loss
 f_optim.train()
 for i in range(epochs):
     optimizer.zero_grad()
     # y_final, times, states = rk_solve(y0, t0, t1, dt, f_optim, method, False)
-    y_final, times, states = rk_adaptive_embedded(y0, t0, t1, dt, f_optim, f4, f5, False)
+    y_final, times, states = integrator(f_optim, y0, t0, t1, dt)
     print(f"i = {i}, y_final = {y_final.item()}")
     loss = l(y_final, y_target)
     loss.backward()
@@ -57,8 +60,7 @@ t = np.linspace(0.0, 1.0, 100)
 y_exact_1 = f_exact(t)
 plt.plot(t, y_exact_1, label="y0=5.0")
 
-# y_final, times, states = rk_solve(y0, t0, t1, dt, f_optim, method, True)
-y_final, times, states = rk_adaptive_embedded(y0, t0, t1, dt, f_optim, f4, f5, True)
+y_final, times, states = integrator(f_optim, y0, t0, t1, dt)
     
 times = np.array(times)
 states = np.concatenate([np.expand_dims(state, 0) for state in states])

@@ -3,15 +3,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from datetime import date, datetime
 from neuralodes.models import ConvolutionalODEClassifier
-from neuralodes.ode_solver import (
-    ExplicitEuler,
-    ExplicitMidpoint,
-    ExplicitTrapezoidal,
-    ClassicalRK4,
-    Kuttas38Method,
-    Fehlberg4,
-    Fehlberg5,
-)
+from neuralodes.ode_solver import get_ode_integrator
 from neuralodes.utils import (
     train,
     count_parameters,
@@ -28,9 +20,14 @@ model_name = model_name.replace(".", "_")
 
 writer = SummaryWriter(f"logs\\{model_name}")
 
-tableau_low = ExplicitEuler()
-tableau_high = None
 model = ConvolutionalODEClassifier(
+    ode_solver=get_ode_integrator(
+        method_low="explicit_euler",
+        method_high=None,
+        atol=1e-3,
+        rtol=1e-3,
+        return_all_states=False,
+    ),
     in_channels=1,
     n_channels=64,
     output_size=10,
@@ -38,13 +35,9 @@ model = ConvolutionalODEClassifier(
     activation="relu",
     n_downsampling_blocks=2,
     with_norm=False,
-    tableau_low=tableau_low,
-    tableau_high=tableau_high,
     t0=0.0,
     t1=1.0,
     dt=1.0/6.0,
-    atol=1e-6,
-    rtol=1e-6,
 ).to(device)
 
 optimizer = torch.optim.Adam(params=model.parameters())

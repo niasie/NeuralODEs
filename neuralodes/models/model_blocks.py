@@ -137,22 +137,17 @@ class ConvolutionalODELayer(nn.Module):
             out_channels,
             activation,
             with_norm,
-            tableau_low,
-            tableau_high=None,
+            ode_solver,
             kernel_size=3,
             t0=0.0,
             t1=1.0,
             dt=0.1,
-            atol=1e-6,
-            rtol=1e-6,
         ):
         super().__init__()
         self.w1 = nn.Conv2d(in_channels + 1, in_channels, kernel_size, 1, 1)
         self.w2 = nn.Conv2d(in_channels + 1, out_channels, kernel_size, 1, 1)
 
-        self.solver = rk_solve if tableau_high is None else rk_adaptive_embedded
-        self.tableau_low = tableau_low
-        self.tableau_high = tableau_high
+        self.solver = ode_solver
 
         self.activation = get_activation(activation)()
         self.with_norm = with_norm
@@ -165,8 +160,6 @@ class ConvolutionalODELayer(nn.Module):
         self.t0 = torch.tensor(t0, dtype=torch.float32)
         self.t1 = torch.tensor(t1, dtype=torch.float32)
         self.dt = torch.tensor(dt, dtype=torch.float32)
-        self.atol = atol
-        self.rtol = rtol
 
     def _conv_with_time(self, t, x, conv):
         ts = torch.full_like(x[:, :1], t.item())
@@ -184,28 +177,11 @@ class ConvolutionalODELayer(nn.Module):
         return x
 
     def forward(self, x):
-        x_final = None
-        if self.tableau_high is not None:
-            x_final, _, _ = self.solver(
-                x,
-                self.t0,
-                self.t1,
-                self.dt,
-                self._ode_rhs,
-                self.tableau_low,
-                self.tableau_high,
-                False,
-                self.atol,
-                self.rtol,
-            )
-        else:
-            x_final, _, _ = self.solver(
-                x,
-                self.t0,
-                self.t1,
-                self.dt,
-                self._ode_rhs,
-                self.tableau_low,
-                False,
-            )
+        x_final, _, _ = self.solver(
+            self._ode_rhs,
+            x,
+            self.t0,
+            self.t1,
+            self.dt,
+        )
         return x_final
