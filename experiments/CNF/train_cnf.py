@@ -57,14 +57,14 @@ cnf = ContinousNormalizingFlow(
     n_neurons_param_net=32,
     n_functions=64,
     ode_solver=get_ode_integrator(
-        method_low="explicit_euler",
-        method_high=None,
+        method_low="fehlberg4",
+        method_high="fehlberg5",
         atol=1e-3,
         rtol=1e-3,
         return_all_states=False,
     ),
     t0=0.0,
-    t1=10.0,
+    t1=1.0,
     dt=0.1,
 ).to(device)
 
