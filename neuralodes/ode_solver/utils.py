@@ -92,13 +92,21 @@ def get_ode_integrator(
 
 def get_scipy_integrator(method="RK45", return_all_states=True):
     def integrator(f, z0, t0, t1, dt):
-        f_compat = lambda t, x : f(torch.tensor(t), torch.tensor(x)).clone().detach().numpy()
+        shape = z0.shape
+
+        # SciPy solve_ivp works with 1d Numpy arrays
+        # Convert the n-d tensor into a 1d numpy array
+        z0 = z0.clone().detach().reshape(-1).numpy()
+        
+        # f works with n-d tensors -> need to transform to n-d tensor, apply f, then retransform to 1d numpy array
+        f_compat = lambda t, x : f(torch.tensor(t), torch.tensor(x).reshape(*shape).float()).clone().detach().reshape(-1).numpy()
 
         sol = solve_ivp(f_compat, [t0, t1], z0, first_step=dt.numpy(), method=method)
+
         if return_all_states:
-            return torch.tensor(sol.y[-1]), list(sol.t), list(sol.y)
+            return torch.tensor(sol.y[:, -1]).reshape(*shape).float(), list(sol.t), list(sol.y)
         else:
-            return torch.tensor(sol.y[-1]), [], []
+            return torch.tensor(sol.y[-1]).reshape(*shape).float(), [], []
     
     print(f"Using the Scipy implementation of the {method} method.")
     return integrator
@@ -107,6 +115,5 @@ def get_adjoint_integrator(solver, *f_params):
     def adjoint_integrator(f, z0, t0, t1, dt):
         return AdjointWrapper.apply(
             solver, f, z0, t0, t1, dt, *f_params)
-        
     
     return adjoint_integrator

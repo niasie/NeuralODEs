@@ -3,7 +3,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from datetime import date, datetime
 from neuralodes.models import ConvolutionalODEClassifier
-from neuralodes.ode_solver import get_ode_integrator
+from neuralodes.ode_solver import get_ode_integrator, get_scipy_integrator
 from neuralodes.utils import (
     train,
     count_parameters,
@@ -28,6 +28,7 @@ model = ConvolutionalODEClassifier(
         rtol=1e-3,
         return_all_states=False,
     ),
+    # ode_solver=get_scipy_integrator(method="RK23"),
     in_channels=1,
     n_channels=64,
     output_size=10,
