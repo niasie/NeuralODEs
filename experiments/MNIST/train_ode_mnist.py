@@ -37,8 +37,6 @@ model = ConvolutionalODEClassifier(
     with_norm=False,
     t0=0.0,
     t1=1.0,
-    tableau_low=tableau_low,
-    tableau_high=tableau_high,
     dt=1.0/6.0,
 ).to(device)
 
