@@ -93,20 +93,22 @@ def get_ode_integrator(
 def get_scipy_integrator(method="RK45", return_all_states=True):
     def integrator(f, z0, t0, t1, dt):
         shape = z0.shape
+        
+        device = z0.get_device()
 
         # SciPy solve_ivp works with 1d Numpy arrays
         # Convert the n-d tensor into a 1d numpy array
-        z0 = z0.clone().detach().reshape(-1).numpy()
+        z0 = z0.clone().detach().reshape(-1).cpu().numpy()
         
         # f works with n-d tensors -> need to transform to n-d tensor, apply f, then retransform to 1d numpy array
-        f_compat = lambda t, x : f(torch.tensor(t), torch.tensor(x).reshape(*shape).float()).clone().detach().reshape(-1).numpy()
+        f_compat = lambda t, x : f(torch.tensor(t).to(device), torch.tensor(x).to(device).reshape(*shape).float()).clone().detach().reshape(-1).cpu().numpy()
 
         sol = solve_ivp(f_compat, [t0, t1], z0, first_step=dt.numpy(), method=method)
 
         if return_all_states:
-            return torch.tensor(sol.y[:, -1]).reshape(*shape).float(), list(sol.t), list(sol.y)
+            return torch.tensor(sol.y[:, -1]).to(device).reshape(*shape).float(), list(sol.t), list(sol.y)
         else:
-            return torch.tensor(sol.y[-1]).reshape(*shape).float(), [], []
+            return torch.tensor(sol.y[-1]).to(device).reshape(*shape).float(), [], []
     
     print(f"Using the Scipy implementation of the {method} method.")
     return integrator
