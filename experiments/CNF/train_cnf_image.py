@@ -18,14 +18,13 @@ def read_image(path):
     #image.setflags(write=1)
     return image
 
-def get_nonzero_pixels(image):
-    ix, iy = np.where(image < 100)
-    #mask = np.where(image < 100)
+def get_nonzero_pixels(image, threshold):
+    ix, iy = np.where(image < threshold)
+    #mask = np.where(image < threshold)
     #image[...] = 0.0
     #image[mask] = 255.0
     #image = Image.fromarray(image)
     #image.show()
-    #print(ix.shape, iy.shape)
     coords = np.stack([iy, ix], axis=-1)
     coords = np.float32(coords)
     print(coords.shape)
@@ -34,7 +33,7 @@ def get_nonzero_pixels(image):
     return torch.from_numpy(coords).to(device=device, dtype=torch.float32)
 
 image = read_image("butterfly.png")
-coords = get_nonzero_pixels(image)
+coords = get_nonzero_pixels(image, 150)
 
 def sample_dataset(n_samples):
     indices = torch.randint(coords.shape[0], (n_samples, ))
@@ -77,8 +76,9 @@ def create_scatterplots(n_samples):
 
 cnf = ContinousNormalizingFlow(
     z_size=2,
-    n_neurons_param_net=32,
-    n_functions=64,
+    n_neurons_param_net=64,
+    n_functions=128,
+    hidden_size=10,
     ode_solver=get_ode_integrator(
         method_low="fehlberg4",
         method_high="fehlberg5",
@@ -98,10 +98,10 @@ latent_distribution = torch.distributions.MultivariateNormal(
     ),
 )
 
-epochs = 10000
+epochs = 100000
 batchsize = 512
-optimizer = torch.optim.Adam(cnf.parameters())
-for i in range(0, epochs + 1):
+optimizer = torch.optim.Adam(cnf.parameters(), weight_decay=1e-3)
+for i in range(1, epochs + 1):
     cnf.train()
     cnf.latent_to_sample = False
     optimizer.zero_grad()

@@ -59,8 +59,8 @@ cnf = ContinousNormalizingFlow(
     ode_solver=get_ode_integrator(
         method_low="fehlberg4",
         method_high="fehlberg5",
-        atol=1e-3,
-        rtol=1e-3,
+        atol=1e-5,
+        rtol=1e-5,
         return_all_states=False,
     ),
     t0=0.0,

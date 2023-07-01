@@ -152,6 +152,7 @@ class ContinousNormalizingFlow(nn.Module):
         z_size,
         n_neurons_param_net,
         n_functions,
+        hidden_size,
         ode_solver,
         t0=0.0,
         t1=1.0,
@@ -167,6 +168,7 @@ class ContinousNormalizingFlow(nn.Module):
             z_size=z_size,
             n_neurons_param_net=n_neurons_param_net,
             n_functions=n_functions,
+            hidden_size=hidden_size,
         )
 
         self.ode_solver = ode_solver

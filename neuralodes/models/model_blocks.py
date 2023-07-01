@@ -193,18 +193,20 @@ class ParemeterPredicitingNetwork(nn.Module):
             z_size,
             n_neurons,
             n_functions,
+            hidden_size,
         ) -> None:
         super().__init__()
         self.z_size = z_size
         self.n_neurons = n_neurons
         self.n_functions = n_functions
-
+        self.hidden_size = hidden_size
+        
         self.w_in_network = nn.Sequential(
             nn.Linear(1, n_neurons),
             nn.Tanh(),
             nn.Linear(n_neurons, n_neurons),
             nn.Tanh(),
-            nn.Linear(n_neurons, n_functions * z_size),
+            nn.Linear(n_neurons, n_functions * z_size * hidden_size),
         )
 
         self.w_out_network = nn.Sequential(
@@ -212,7 +214,7 @@ class ParemeterPredicitingNetwork(nn.Module):
             nn.Tanh(),
             nn.Linear(n_neurons, n_neurons),
             nn.Tanh(),
-            nn.Linear(n_neurons, n_functions * z_size),
+            nn.Linear(n_neurons, n_functions * z_size * hidden_size),
         )
         
         self.b_network = nn.Sequential(
@@ -220,7 +222,7 @@ class ParemeterPredicitingNetwork(nn.Module):
             nn.Tanh(),
             nn.Linear(n_neurons, n_neurons),
             nn.Tanh(),
-            nn.Linear(n_neurons, n_functions),
+            nn.Linear(n_neurons, n_functions * hidden_size),
         )
 
         self.gate_network = nn.Sequential(
@@ -239,16 +241,16 @@ class ParemeterPredicitingNetwork(nn.Module):
         b = self.b_network(t)
         gate = self.gate_network(t)
 
-        w_in = w_in.reshape(1, self.n_functions, self.z_size, 1)
-        w_out = w_out.reshape(1, self.n_functions, 1, self.z_size)
-        b = b.reshape(1, self.n_functions, 1, 1)
+        w_in = w_in.reshape(1, self.n_functions, self.hidden_size, self.z_size)
+        w_out = w_out.reshape(1, self.n_functions, self.z_size, self.hidden_size)
+        b = b.reshape(1, self.n_functions, self.hidden_size, 1)
         gate = gate.reshape(1, self.n_functions, 1, 1)
 
         return w_in, w_out, b, gate
 
 
 class ContinousNormalizingFlowRHS(nn.Module):
-    def __init__(self, z_size, n_neurons_param_net, n_functions) -> None:
+    def __init__(self, z_size, n_neurons_param_net, n_functions, hidden_size) -> None:
         super().__init__()
 
         self.z_size = z_size
@@ -259,6 +261,7 @@ class ContinousNormalizingFlowRHS(nn.Module):
             z_size=z_size,
             n_neurons=n_neurons_param_net,
             n_functions=n_functions,
+            hidden_size=hidden_size,
         )
         self.tanh = nn.Tanh()
 
@@ -272,21 +275,22 @@ class ContinousNormalizingFlowRHS(nn.Module):
         # logpz = z_and_logpz[..., -1]
 
         z.requires_grad_(True)
-        w_in, w_out, b, gate = self.parameter_predicting_network(t)
+        with torch.enable_grad():
+            w_in, w_out, b, gate = self.parameter_predicting_network(t)
 
-        z_ = z.unsqueeze(1).unsqueeze(1)
-        hidden_state = self.tanh(torch.matmul(z_, w_in) + b)
-        gated_hidden_state = hidden_state * gate
-        dz_dt = torch.matmul(gated_hidden_state, w_out).mean(dim=1).squeeze()
+            z_ = z.unsqueeze(1).unsqueeze(-1)
+            hidden_state = self.tanh(torch.matmul(w_in, z_) + b)
+            gated_hidden_state = hidden_state * gate
+            dz_dt = torch.matmul(w_out, gated_hidden_state).mean(dim=1).squeeze()
+            
+            # dzdt = f, need trace of dzdf
+            trace = 0.0
+            for i in range(self.z_size):
+                # get i-th row of jacobian
+                dfi_dz = torch.autograd.grad(dz_dt[:, i].sum(), z, create_graph=True)[0]
+                trace += dfi_dz[:, i]
+            trace = trace.unsqueeze(1)
 
-        # dzdt = f, need trace of dzdf
-        trace = 0.0
-        for i in range(self.z_size):
-            # get i-th row of jacobian
-            dfi_dz = torch.autograd.grad(dz_dt[:, i].sum(), z, create_graph=True)[0]
-            trace += dfi_dz[:, i]
-        trace = trace.unsqueeze(1)
-
-        dlogpz_dt = -trace
+            dlogpz_dt = -trace
         return torch.concat((dz_dt, dlogpz_dt), dim=-1)
 
