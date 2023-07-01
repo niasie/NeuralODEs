@@ -8,6 +8,7 @@ from .tableau import (
     Fehlberg4,
     Fehlberg5,
 )
+from .AdjointWrapper import AdjointWrapper
 import torch
 from scipy.integrate import solve_ivp
 
@@ -91,7 +92,9 @@ def get_ode_integrator(
 
 def get_scipy_integrator(method="RK45", return_all_states=True):
     def integrator(f, z0, t0, t1, dt):
-        sol = solve_ivp(f, [t0, t1], z0.squeeze(0), args=(True,), first_step=dt, method=method)
+        f_compat = lambda t, x : f(torch.tensor(t), torch.tensor(x)).clone().detach().numpy()
+
+        sol = solve_ivp(f_compat, [t0, t1], z0, first_step=dt.numpy(), method=method)
         if return_all_states:
             return torch.tensor(sol.y[-1]), list(sol.t), list(sol.y)
         else:
@@ -99,3 +102,11 @@ def get_scipy_integrator(method="RK45", return_all_states=True):
     
     print(f"Using the Scipy implementation of the {method} method.")
     return integrator
+
+def get_adjoint_integrator(solver, *f_params):
+    def adjoint_integrator(f, z0, t0, t1, dt):
+        return AdjointWrapper.apply(
+            solver, f, z0, t0, t1, dt, *f_params)
+        
+    
+    return adjoint_integrator

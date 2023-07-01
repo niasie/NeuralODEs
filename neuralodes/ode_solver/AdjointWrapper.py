@@ -41,7 +41,7 @@ class AdjointWrapper(torch.autograd.Function):
                 # s[2:] = *
 
                 with torch.enable_grad():
-                    t, s = torch.tensor(t), torch.tensor(s)
+                    t, s = t.clone().detach(), s.clone().detach()
                     zt = s[0].clone().detach().requires_grad_()
 
                     aug = [None] * s.shape[0]
@@ -65,9 +65,3 @@ class AdjointWrapper(torch.autograd.Function):
             dL_dparam = s1[2:].unsqueeze(0)
 
         return (None, None, dL_dz0, None, None, None, *dL_dparam)
-
-
-def adjoint_wrapper(solver, f, f_params, y0, t0, t1, dt):
-    result = AdjointWrapper.apply(
-        solver, f, y0, t0, t1, dt, *f_params)
-    return result
