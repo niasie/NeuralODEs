@@ -100,7 +100,7 @@ latent_distribution = torch.distributions.MultivariateNormal(
 
 epochs = 100000
 batchsize = 512
-optimizer = torch.optim.Adam(cnf.parameters(), weight_decay=1e-3)
+optimizer = torch.optim.Adam(cnf.parameters())
 for i in range(1, epochs + 1):
     cnf.train()
     cnf.latent_to_sample = False

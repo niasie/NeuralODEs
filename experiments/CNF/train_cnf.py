@@ -56,6 +56,7 @@ cnf = ContinousNormalizingFlow(
     z_size=2,
     n_neurons_param_net=32,
     n_functions=64,
+    hidden_size=1,
     ode_solver=get_ode_integrator(
         method_low="fehlberg4",
         method_high="fehlberg5",
