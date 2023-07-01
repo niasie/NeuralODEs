@@ -108,7 +108,7 @@ def get_scipy_integrator(method="RK45", return_all_states=True):
         if return_all_states:
             return torch.tensor(sol.y[:, -1]).to(device).reshape(*shape).float(), list(sol.t), list(sol.y)
         else:
-            return torch.tensor(sol.y[-1]).to(device).reshape(*shape).float(), [], []
+            return torch.tensor(sol.y[:, -1]).to(device).reshape(*shape).float(), [], []
     
     print(f"Using the Scipy implementation of the {method} method.")
     return integrator
