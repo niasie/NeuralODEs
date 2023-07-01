@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from ..ode_solver import rk_solve, rk_adaptive_embedded
+from ..ode_solver import rk_solve, rk_adaptive_embedded, get_adjoint_integrator
 from ..utils import get_activation
 
 
@@ -147,7 +147,7 @@ class ConvolutionalODELayer(nn.Module):
         self.w1 = nn.Conv2d(in_channels + 1, in_channels, kernel_size, 1, 1)
         self.w2 = nn.Conv2d(in_channels + 1, out_channels, kernel_size, 1, 1)
 
-        self.solver = ode_solver
+        self.solver = get_adjoint_integrator(ode_solver, *list(self.w1.parameters()), *list(self.w2.parameters()))
 
         self.activation = get_activation(activation)()
         self.with_norm = with_norm

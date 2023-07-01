@@ -12,12 +12,12 @@ class AdjointWrapper(torch.autograd.Function):
         ctx.f = f
 
         with torch.no_grad():
-            z1, _, _ = solver(f, z0, t0, t1, dt)
+            z1, times, states = solver(f, z0, t0, t1, dt)
             z1 = z1[-1]
 
             ctx.save_for_backward(z0, t0, t1, dt, z1, *f_params)
         
-        return z1
+        return z1, times, states
 
     @staticmethod
     def backward(ctx, dL_dz1):
