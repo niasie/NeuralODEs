@@ -1,5 +1,6 @@
 from typing import Any
 import torch
+from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from prettytable import PrettyTable
 import os
@@ -26,7 +27,7 @@ def train(
     for epoch in range(num_epochs):
         model.train()
         loss_total = 0.0
-        for batch in train_set:
+        for batch in tqdm(train_set):
             optimizer.zero_grad()
             loss = loss_model(model, batch)
             loss.backward()
