@@ -29,7 +29,7 @@ model = ConvolutionalODEClassifier(
         return_all_states=False,
     ),
     # ode_solver=get_scipy_integrator(method="RK23"),
-    adjoint_grads=False
+    adjoint_grads=False,
     in_channels=1,
     n_channels=64,
     output_size=10,
