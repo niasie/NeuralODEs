@@ -27,12 +27,14 @@ def train(
     for epoch in range(num_epochs):
         model.train()
         loss_total = 0.0
-        for batch in tqdm(train_set):
+        pbar = tqdm(train_set)
+        for batch in pbar:
             optimizer.zero_grad()
             loss = loss_model(model, batch)
             loss.backward()
             optimizer.step()
             loss_total += loss.item()
+            pbar.set_description("Loss %e" % loss.item())
         loss_total /= n_batch
 
         writer.add_scalar("train_loss", loss_total, epoch)
