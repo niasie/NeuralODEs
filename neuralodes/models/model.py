@@ -101,6 +101,7 @@ class ConvolutionalODEClassifier(nn.Module):
     def __init__(
             self,
             ode_solver,
+            adjoint_grads=False,
             in_channels=1,
             n_channels=64,
             output_size=10,
@@ -115,6 +116,7 @@ class ConvolutionalODEClassifier(nn.Module):
         super().__init__()
         self.ode_layer = ConvolutionalODELayer(
             ode_solver=ode_solver,
+            adjoint_grads=adjoint_grads,
             in_channels=n_channels,
             out_channels=n_channels,
             activation=activation,
