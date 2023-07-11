@@ -21,15 +21,15 @@ model_name = model_name.replace(".", "_")
 writer = SummaryWriter(f"logs\\{model_name}")
 
 model = ConvolutionalODEClassifier(
-    ode_solver=get_ode_integrator(
-        method_low="explicit_euler",
-        method_high=None,
-        atol=1e-3,
-        rtol=1e-3,
-        return_all_states=False,
-    ),
-    # ode_solver=get_scipy_integrator(method="RK23"),
-    adjoint_grads=False,
+    # ode_solver=get_ode_integrator(
+    #     method_low="explicit_euler",
+    #     method_high=None,
+    #     atol=1e-3,
+    #     rtol=1e-3,
+    #     return_all_states=False,
+    # ),
+    ode_solver=get_scipy_integrator(method="LSODA"),
+    adjoint_grads=True,
     in_channels=1,
     n_channels=64,
     output_size=10,
