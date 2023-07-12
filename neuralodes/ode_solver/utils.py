@@ -103,7 +103,7 @@ def get_scipy_integrator(method="RK45", return_all_states=True):
         # f works with n-d tensors -> need to transform to n-d tensor, apply f, then retransform to 1d numpy array
         f_compat = lambda t, x : f(torch.tensor(t).to(device), torch.tensor(x).to(device).reshape(*shape).float()).clone().detach().reshape(-1).cpu().numpy()
         
-        dt = abs(dt)
+        dt = abs(dt.numpy())
         print(z0)
         sol = solve_ivp(f_compat, [t0, t1], z0, first_step=dt, method=method)
 
