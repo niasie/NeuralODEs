@@ -94,7 +94,7 @@ def get_scipy_integrator(method="RK45", return_all_states=True):
     def integrator(f, z0, t0, t1, dt):
         shape = z0.shape
         
-        device = z0.get_device()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # SciPy solve_ivp works with 1d Numpy arrays
         # Convert the n-d tensor into a 1d numpy array
