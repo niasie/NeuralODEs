@@ -51,6 +51,7 @@ def get_ode_integrator(
                 t1_=t1,
                 dt_=dt,
                 f=f,
+                implicit=True,
                 tableau=tableau_low,
                 return_all_states=return_all_states,
             )

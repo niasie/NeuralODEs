@@ -35,8 +35,36 @@ def explicit_rk_step(
         b = b.unsqueeze(0)
     return y0 + dt * torch.sum(b * k, dim=-1), k if return_increments else None
 
+def implicit_rk_step(
+    y0: torch.Tensor,
+    t0: torch.Tensor,
+    dt,
+    f,
+    tableau: ButcherTableau,
+    return_increments=False
+):
+    y1 = torch.nn.Parameter(data=y0)
+    optim = torch.optim.LBFGS(
+        [y0], 
+        lr=1., 
+        max_iter=200, 
+        max_eval=2000, 
+        tolerance_grad=1e-12, 
+        tolerance_change=1e-12, 
+        history_size=100, 
+        line_search_fn='strong_wolfe'
+    )
 
-def rk_solve(f, y0_, t0_, t1_, dt_, tableau, return_all_states=False):
+    def closure():
+        optim.zero_grad()
+        residual = torch.nn.functional.mse_loss(y1 - y0 - dt * f(t0, y0), torch.zeros_like(y1))
+        return residual
+
+    optim.step(closure)
+
+    return y1, None
+
+def rk_solve(f, y0_, t0_, t1_, dt_, tableau, implicit=False, return_all_states=False):
     t = torch.clone(t0_)
     dt = torch.clone(dt_)
     y = torch.clone(y0_)
@@ -52,7 +80,12 @@ def rk_solve(f, y0_, t0_, t1_, dt_, tableau, return_all_states=False):
         if return_all_states:
             times.append(t.detach().cpu().numpy())
             states.append(y.detach().cpu().numpy())
-        y, _ = explicit_rk_step(y, t, dt, f, tableau)
+        
+        if implicit is False:
+            y, _ = explicit_rk_step(y, t, dt, f, tableau)
+        else:
+            y, _ = implicit_rk_step(y, t, dt, f, tableau)
+        
         t = t + dt
 
     if return_all_states:
