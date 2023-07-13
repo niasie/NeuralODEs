@@ -105,7 +105,6 @@ def get_scipy_integrator(method="RK45", return_all_states=True):
         f_compat = lambda t, x : f(torch.tensor(t).to(device), torch.tensor(x).to(device).reshape(*shape).float()).clone().detach().reshape(-1).cpu().numpy()
         
         dt = abs(dt.numpy())
-        print(z0)
         sol = solve_ivp(f_compat, [t0, t1], z0, first_step=dt, method=method, lband=shape[0]//2+1, uband=shape[0]//2+1)
 
         if return_all_states:
