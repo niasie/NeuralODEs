@@ -3,7 +3,9 @@ from .tableau import (
     ExplicitEuler,
     ImplicitEuler,
     ExplicitMidpoint,
+    ImplicitMidpoint,
     ExplicitTrapezoidal,
+    ImplicitTrapezoidal,
     ClassicalRK4,
     Kuttas38Method,
     Fehlberg4,
@@ -21,8 +23,12 @@ def get_tableau(name):
         return ImplicitEuler()
     elif name == "explicit_midpoint":
         return ExplicitMidpoint()
+    elif name == "implicit_midpoint":
+        return ImplicitMidpoint()
     elif name == "explicit_trapezoidal":
         return ExplicitTrapezoidal()
+    elif name == "implicit_trapezoidal":
+        return ImplicitTrapezoidal()
     elif name == "classikal_rk4":
         return ClassicalRK4()
     elif name == "kutta38":
@@ -54,7 +60,6 @@ def get_ode_integrator(
                 t1_=t1,
                 dt_=dt,
                 f=f,
-                implicit=True,
                 tableau=tableau_low,
                 return_all_states=return_all_states,
             )

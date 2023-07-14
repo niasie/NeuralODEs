@@ -37,6 +37,15 @@ class ExplicitTrapezoidal(ButcherTableau):
             torch.tensor([0.5, 0.5], dtype=torch.float32, device=device),
         )
 
+class ImplicitTrapezoidal(ButcherTableau):
+    def __init__(self):
+        super().__init__(
+            torch.tensor([[0.0, 0.0],
+                          [0.5, 0.5]], dtype=torch.float32, device=device),
+            torch.tensor([0.0, 1.0], dtype=torch.float32, device=device),
+            torch.tensor([0.5, 0.5], dtype=torch.float32, device=device),
+        )
+
 
 class ExplicitMidpoint(ButcherTableau):
     def __init__(self):
@@ -45,6 +54,14 @@ class ExplicitMidpoint(ButcherTableau):
                           [0.5, 0.0]], dtype=torch.float32, device=device),
             torch.tensor([0.0, 1.0], dtype=torch.float32, device=device),
             torch.tensor([0.0, 0.5], dtype=torch.float32, device=device),
+        )
+
+class ImplicitMidpoint(ButcherTableau):
+    def __init__(self):
+        super().__init__(
+            torch.tensor([[0.5]], dtype=torch.float32, device=device),
+            torch.tensor([1], dtype=torch.float32, device=device),
+            torch.tensor([0.5], dtype=torch.float32, device=device),
         )
 
 

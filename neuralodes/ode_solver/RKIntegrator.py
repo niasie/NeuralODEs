@@ -1,6 +1,18 @@
 import torch
 from .tableau import ButcherTableau
 
+def rk_step(
+    y0: torch.Tensor, # [b, ...]
+    t0: torch.Tensor,
+    dt,
+    f,
+    tableau: ButcherTableau,
+    return_increments=False,
+):
+    if tableau.a.shape[0] > 1 and torch.norm(torch.triu(tableau.a, diagonal=1)) < 1e-7 or tableau.a.shape == 1 and tableau.a[0, 0] < 1e-7:
+        return explicit_rk_step(y0, t0, dt, f, tableau, return_increments)
+    else:
+        return implicit_rk_step(y0, t0, dt, f, tableau, return_increments)
 
 def explicit_rk_step(
     y0: torch.Tensor, # [b, ...]
@@ -78,30 +90,9 @@ def implicit_rk_step(
 
     y1 = y0 + dt * torch.tensordot(k, b, dims=([-1], [0]))
 
-    return y1, k if return_increments else None
-    
-    # y1 = torch.nn.Parameter(data=y0)
-    # optim = torch.optim.LBFGS(
-    #     [y0], 
-    #     lr=1., 
-    #     max_iter=200, 
-    #     max_eval=2000, 
-    #     tolerance_grad=1e-12, 
-    #     tolerance_change=1e-12, 
-    #     history_size=100, 
-    #     line_search_fn='strong_wolfe'
-    # )
+    return y1, k.data if return_increments else None
 
-    # def closure():
-    #     optim.zero_grad()
-    #     residual = torch.nn.functional.mse_loss(y1 - y0 - dt * f(t0, y0), torch.zeros_like(y1))
-    #     return residual
-
-    # optim.step(closure)
-
-    # return y1, None
-
-def rk_solve(f, y0_, t0_, t1_, dt_, tableau, implicit=False, return_all_states=False):
+def rk_solve(f, y0_, t0_, t1_, dt_, tableau, return_all_states=False):
     t = torch.clone(t0_)
     dt = torch.clone(dt_)
     y = torch.clone(y0_)
@@ -117,11 +108,8 @@ def rk_solve(f, y0_, t0_, t1_, dt_, tableau, implicit=False, return_all_states=F
         if return_all_states:
             times.append(t.detach().cpu().numpy())
             states.append(y.detach().cpu().numpy())
-        
-        if implicit is False:
-            y, _ = explicit_rk_step(y, t, dt, f, tableau)
-        else:
-            y, _ = implicit_rk_step(y, t, dt, f, tableau)
+
+        y, _ = rk_step(y, t, dt, f, tableau)
         
         t = t + dt
 
@@ -149,9 +137,9 @@ def rk_adaptive(y0_, t0_, t1_, dt_, f, tableau_low, tableau_high, return_all_sta
         states.append(y.detach().cpu().numpy())
 
     while not reached_t1(t, t1, integrate_forward):
-        y_high, _ = explicit_rk_step(y, t, dt, f, tableau_high)
+        y_high, _ = rk_step(y, t, dt, f, tableau_high)
         with torch.no_grad():
-            y_low, _ = explicit_rk_step(y, t, dt, f, tableau_low)
+            y_low, _ = rk_step(y, t, dt, f, tableau_low)
             error_estimate = (y_low - y_high).flatten(1, -1).norm(dim=-1)
             y_norm = y.flatten(1, -1).norm(dim=-1)
             tolerance = torch.maximum(rtol * y_norm, atol)
@@ -197,7 +185,7 @@ def rk_adaptive_embedded(y0_, t0_, t1_, dt_, f, tableau_low, tableau_high, retur
         states.append(y.detach().cpu().numpy())
 
     while not reached_t1(t, t1, integrate_forward):
-        y_low, increments = explicit_rk_step(y, t, dt, f, tableau_low, return_increments=True)
+        y_low, increments = rk_step(y, t, dt, f, tableau_low, return_increments=True)
         y_high = y + dt * torch.sum(b_high * increments, dim=-1)
         with torch.no_grad():
             error_estimate = (y_low - y_high).flatten(1, -1).norm(dim=-1)
