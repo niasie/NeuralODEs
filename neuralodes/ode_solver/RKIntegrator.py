@@ -9,7 +9,7 @@ def rk_step(
     tableau: ButcherTableau,
     return_increments=False,
 ):
-    if tableau.a.shape[0] > 1 and torch.norm(torch.triu(tableau.a, diagonal=1)) < 1e-7 or tableau.a.shape == 1 and tableau.a[0, 0] < 1e-7:
+    if torch.norm(torch.triu(tableau.a)) < 1e-7:
         return explicit_rk_step(y0, t0, dt, f, tableau, return_increments)
     else:
         return implicit_rk_step(y0, t0, dt, f, tableau, return_increments)
