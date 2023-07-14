@@ -57,6 +57,7 @@ def train(
                         if val_score < val_best:
                             val_best = val_score
                             torch.save(checkpoint, checkpoint_path)
+    print(f"Best validation score={val_best}")
 
 
 # https://discuss.pytorch.org/t/how-do-i-check-the-number-of-parameters-of-a-model/4325/23?page=2

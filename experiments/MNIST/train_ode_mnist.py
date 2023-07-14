@@ -22,7 +22,7 @@ writer = SummaryWriter(f"logs\\{model_name}")
 
 model = ConvolutionalODEClassifier(
     ode_solver=get_ode_integrator(
-        method_low="explicit_euler",
+        method_low="fehlberg4",
         method_high=None,
         atol=1e-3,
         rtol=1e-3,
@@ -61,3 +61,4 @@ train(
     mode="max",
     checkpoint_path=f"logs\\{model_name}",
 )
+print(torch.cuda.max_memory_allocated() / (1024 ** 3))
