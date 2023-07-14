@@ -54,8 +54,8 @@ def create_scatterplots(n_samples):
 
 cnf = ContinousNormalizingFlow(
     z_size=2,
-    n_neurons_param_net=32,
-    n_functions=64,
+    n_neurons_param_net=64,
+    n_functions=128,
     hidden_size=1,
     ode_solver=get_ode_integrator(
         method_low="fehlberg4",
@@ -76,8 +76,8 @@ latent_distribution = torch.distributions.MultivariateNormal(
     ),
 )
 
-epochs = 10000
-batchsize = 512
+epochs = 100000
+batchsize = 128
 optimizer = torch.optim.Adam(cnf.parameters())
 for i in range(1, epochs + 1):
     cnf.train()
@@ -97,3 +97,4 @@ for i in range(1, epochs + 1):
     if i % 100 == 0:
         fig = create_scatterplots(1000)
         plt.savefig(f"figs\\{i}.png")
+        torch.save(cnf.state_dict(), f"models\\circles\\{i}.pth")
