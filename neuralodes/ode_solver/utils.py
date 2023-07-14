@@ -1,6 +1,7 @@
 from .RKIntegrator import rk_solve, rk_adaptive, rk_adaptive_embedded
 from .tableau import (
     ExplicitEuler,
+    ImplicitEuler,
     ExplicitMidpoint,
     ExplicitTrapezoidal,
     ClassicalRK4,
@@ -16,6 +17,8 @@ def get_tableau(name):
     name = name.lower()
     if name == "explicit_euler":
         return ExplicitEuler()
+    elif name == "implicit_euler":
+        return ImplicitEuler()
     elif name == "explicit_midpoint":
         return ExplicitMidpoint()
     elif name == "explicit_trapezoidal":

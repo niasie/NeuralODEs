@@ -19,6 +19,14 @@ class ExplicitEuler(ButcherTableau):
             torch.tensor([0], dtype=torch.float32, device=device),
         )
 
+class ImplicitEuler(ButcherTableau):
+    def __init__(self):
+        super().__init__(
+            torch.tensor([[1]], dtype=torch.float32, device=device),
+            torch.tensor([1], dtype=torch.float32, device=device),
+            torch.tensor([1], dtype=torch.float32, device=device),
+        )
+
 
 class ExplicitTrapezoidal(ButcherTableau):
     def __init__(self):
