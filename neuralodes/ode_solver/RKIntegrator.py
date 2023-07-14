@@ -67,7 +67,7 @@ def implicit_rk_step(
     def closure():
         optim.zero_grad()
 
-        residual = torch.tensor(0.)
+        residual = torch.tensor(0.).to(y0.device, y0.dtype)
 
         for i in range(s):
             residual += torch.nn.functional.mse_loss(k[..., i], f(t0 + c[i] * dt, y0 + dt * torch.tensordot(k, a[:, i], dims=([-1], [0]))))
