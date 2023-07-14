@@ -47,3 +47,4 @@ train(
     mode="max",
     checkpoint_path=f"logs\\{model_name}",
 )
+print(torch.cuda.max_memory_allocated() / (1024 ** 3))
