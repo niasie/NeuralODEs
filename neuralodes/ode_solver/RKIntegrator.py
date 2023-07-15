@@ -19,7 +19,10 @@ def explicit_rk_step(
     s = tableau.s
 
     k = torch.empty((*y0_shape, s), dtype=y0.dtype, device=y0.device)
+    dt = dt.to(y0.device)
+
     k[..., 0] = f(t0 + c[0] * dt, y0)
+
     
     for i in range(1, s):
         as_current = a[i, :i]
@@ -33,6 +36,8 @@ def explicit_rk_step(
     
     for _ in range(y0_dim):
         b = b.unsqueeze(0)
+    k = k.to(y0.device)
+    b = b.to(y0.device)
     return y0 + dt * torch.sum(b * k, dim=-1), k if return_increments else None
 
 

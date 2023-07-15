@@ -3,6 +3,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from prettytable import PrettyTable
 import os
+import torch.nn as nn
 
 
 def train(
@@ -109,3 +110,10 @@ def compute_accuracy(model, dataset):
     preds = model(dataset[0])
     accuracy = torch.mean((torch.argmax(preds, dim=-1) == dataset[1]).float())
     return accuracy
+
+
+def convrelu(in_channels, out_channels, kernel, padding):
+    return nn.Sequential(
+        nn.Conv2d(in_channels, out_channels, kernel, padding=padding),
+        nn.ReLU(inplace=True),
+    )
