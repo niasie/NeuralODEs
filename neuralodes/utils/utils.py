@@ -1,5 +1,6 @@
 from typing import Any
 import torch
+from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 from prettytable import PrettyTable
 import os
@@ -27,12 +28,14 @@ def train(
     for epoch in range(num_epochs):
         model.train()
         loss_total = 0.0
-        for batch in train_set:
+        pbar = tqdm(train_set)
+        for batch in pbar:
             optimizer.zero_grad()
             loss = loss_model(model, batch)
             loss.backward()
             optimizer.step()
             loss_total += loss.item()
+            pbar.set_description("Loss %e" % loss.item())
         loss_total /= n_batch
 
         writer.add_scalar("train_loss", loss_total, epoch)
@@ -58,6 +61,7 @@ def train(
                         if val_score < val_best:
                             val_best = val_score
                             torch.save(checkpoint, checkpoint_path)
+    print(f"Best validation score={val_best}")
 
 
 # https://discuss.pytorch.org/t/how-do-i-check-the-number-of-parameters-of-a-model/4325/23?page=2

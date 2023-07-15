@@ -102,22 +102,24 @@ class ResNetConv(nn.Module):
 
 class ConvolutionalODEClassifier(nn.Module):
     def __init__(
-        self,
-        ode_solver,
-        in_channels=1,
-        n_channels=64,
-        output_size=10,
-        kernel_size=3,
-        n_downsampling_blocks=2,
-        activation="relu",
-        with_norm="False",
-        t0=0.0,
-        t1=1.0,
-        dt=0.1,
-    ):
+            self,
+            ode_solver,
+            adjoint_grads=False,
+            in_channels=1,
+            n_channels=64,
+            output_size=10,
+            kernel_size=3,
+            n_downsampling_blocks=2,
+            activation="relu",
+            with_norm="False",
+            t0=0.0,
+            t1=1.0,
+            dt=0.1,
+        ):
         super().__init__()
         self.ode_layer = ConvolutionalODELayer(
             ode_solver=ode_solver,
+            adjoint_grads=adjoint_grads,
             in_channels=n_channels,
             out_channels=n_channels,
             activation=activation,

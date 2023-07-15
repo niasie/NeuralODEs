@@ -1,5 +1,5 @@
 import torch
-from neuralodes.ode_solver import get_ode_integrator
+from neuralodes.ode_solver import get_ode_integrator, get_scipy_integrator
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,8 +12,13 @@ class FOptim(torch.nn.Module):
         super().__init__()
         self.coeff = torch.nn.Parameter(torch.tensor(-1.0, device=device), requires_grad=True)
     
-    def forward(self, t, y):
-        return self.coeff * y
+    def forward(self, t, y, numpy=False):
+        y = torch.tensor(y)
+
+        if not numpy:
+            return self.coeff * y
+        else:
+            return (self.coeff * y).detach().numpy()
 
 
 
@@ -29,16 +34,18 @@ dt = torch.tensor(0.1, device=device)
 optimizer = torch.optim.Adam(f_optim.parameters(), lr=1e-2)
 epochs = 250
 
-method_low = "fehlberg4"
-method_high = None
+# method_low = "fehlberg4"
+# method_high = None
 
-integrator = get_ode_integrator(
-    method_low=method_low,
-    method_high=method_high,
-    atol=1e-6,
-    rtol=1e-6,
-    return_all_states=True,
-)
+# integrator = get_ode_integrator(
+#     method_low=method_low,
+#     method_high=method_high,
+#     atol=1e-6,
+#     rtol=1e-6,
+#     return_all_states=True,
+# )
+
+integrator = get_scipy_integrator()
 
 l = torch.nn.functional.mse_loss
 f_optim.train()

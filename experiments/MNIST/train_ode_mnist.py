@@ -3,7 +3,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from datetime import date, datetime
 from neuralodes.models import ConvolutionalODEClassifier
-from neuralodes.ode_solver import get_ode_integrator
+from neuralodes.ode_solver import get_ode_integrator, get_scipy_integrator
 from neuralodes.utils import (
     train,
     count_parameters,
@@ -22,12 +22,14 @@ writer = SummaryWriter(f"logs\\{model_name}")
 
 model = ConvolutionalODEClassifier(
     ode_solver=get_ode_integrator(
-        method_low="explicit_euler",
+        method_low="implicit_euler",
         method_high=None,
         atol=1e-3,
         rtol=1e-3,
         return_all_states=False,
     ),
+    # ode_solver=get_scipy_integrator(method="LSODA"),
+    adjoint_grads=True,
     in_channels=1,
     n_channels=64,
     output_size=10,
@@ -43,7 +45,7 @@ model = ConvolutionalODEClassifier(
 optimizer = torch.optim.Adam(params=model.parameters())
 count_parameters(model)
 
-train_set = getMNISTTDataset(device, "train", 0, 128, True)
+train_set = getMNISTTDataset(device, "train", 0, 1, True)
 test_input = load_images(device, "test")
 test_labels = load_labels(device, "test")
 test_set = (test_input, test_labels)
@@ -61,3 +63,4 @@ train(
     mode="max",
     checkpoint_path=f"logs\\{model_name}",
 )
+print(torch.cuda.max_memory_allocated() / (1024 ** 3))

@@ -119,3 +119,4 @@ for i in range(1, epochs + 1):
     if i % 100 == 0:
         fig = create_scatterplots(1000)
         plt.savefig(f"figs_learn_image\\{i}.png")
+        torch.save(cnf.state_dict(), f"models\\butterfly\\{i}.pth")
