@@ -14,6 +14,7 @@ from neuralodes.ode_solver import (
     Fehlberg4,
     Fehlberg5,
 )
+from neuralodes.utils import count_parameters
 
 torch.manual_seed(42)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -49,6 +50,7 @@ model = ConvolutionalODEClassifier(
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+count_parameters(model)
 
 for epoch in range(num_epochs):
     train_running_loss = 0.0
